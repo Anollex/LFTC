@@ -5,142 +5,294 @@
 
 #include "parser.h"
 
-Token *iTk;		// the iterator in the tokens list
-Token *consumedTk;		// the last consumed token
+Token *iTk; // the iterator in the tokens list
+Token *consumedTk; // the last consumed token
 
-void tkerr(const char *fmt,...){
-	fprintf(stderr,"error in line %d: ",iTk->line);
+void tkerr(const char *fmt, ...);
+
+bool consume(int code);
+
+//unit: ( structDef | fnDef | varDef )* END
+bool unit();
+
+//structDef: STRUCT ID LACC varDef* RACC SEMICOLON
+bool structDef();
+
+//varDef: typeBase ID arrayDecl? SEMICOLON
+bool varDef();
+
+//typeBase: TYPE_INT | TYPE_DOUBLE | TYPE_CHAR | STRUCT ID
+bool typeBase();
+
+//arrayDecl: LBRACKET INT? RBRACKET
+bool arrayDecl();
+
+//fnDef: ( typeBase | VOID ) ID
+//				LPAR ( fnParam ( COMMA fnParam )* )? RPAR
+//				stmCompound
+bool fnDef();
+
+//fnParam: typeBase ID arrayDecl?
+bool fnParam();
+
+// stm: stmCompound
+//		| IF LPAR expr RPAR stm ( ELSE stm )?
+//		| WHILE LPAR expr RPAR stm
+//		| RETURN expr? SEMICOLON
+//		| expr? SEMICOLON
+bool stm();
+
+// stmCompound: LACC ( varDef | stm )* RACC
+bool stmCompound();
+
+// expr: exprAssign
+bool expr();
+
+// exprAssign: exprUnary ASSIGN exprAssign | exprOr
+bool exprAssign();
+
+// exprOr: exprOr OR exprAnd | exprAnd
+bool exprOr();
+
+// exprAnd: exprAnd AND exprEq | exprEq
+bool exprAnd();
+
+// exprEq: exprEq ( EQUAL | NOTEQ ) exprRel | exprRel
+bool exprEq();
+
+// exprRel: exprRel ( LESS | LESSEQ | GREATER | GREATEREQ ) exprAdd | exprAdd
+bool exprRel();
+
+// exprAdd: exprAdd ( ADD | SUB ) exprMul | exprMul
+bool exprAdd();
+
+// exprMul: exprMul ( MUL | DIV ) exprCast | exprCast
+bool exprMul();
+
+// exprCast: LPAR typeBase arrayDecl? RPAR exprCast | exprUnary
+bool exprCast();
+
+// exprUnary: ( SUB | NOT ) exprUnary | exprPostfix
+bool exprUnary();
+
+// exprPostfix: exprPostfix LBRACKET expr RBRACKET
+//		| exprPostfix DOT ID
+//		| exprPrimary
+bool exprPostfix();
+
+// exprPrimary: ID ( LPAR ( expr ( COMMA expr )* )? RPAR )?
+//		| INT | DOUBLE | CHAR | STRING | LPAR expr RPAR
+bool exprPrimary();
+
+void tkerr(const char *fmt, ...) {
+	fprintf(stderr, "error in line %d: ", iTk->line);
 	va_list va;
-	va_start(va,fmt);
-	vfprintf(stderr,fmt,va);
+	va_start(va, fmt);
+	vfprintf(stderr, fmt, va);
 	va_end(va);
-	fprintf(stderr,"\n");
+	fprintf(stderr, "\n");
 	exit(EXIT_FAILURE);
-	}
+}
 
-bool consume(int code){
-	if(iTk->code==code){
-		consumedTk=iTk;
-		iTk=iTk->next;
+bool consume(int code) {
+	if (iTk->code == code) {
+		consumedTk = iTk;
+		iTk = iTk->next;
 		return true;
-		}
+	}
 	return false;
-	}
+}
 
-// typeBase: TYPE_INT | TYPE_DOUBLE | TYPE_CHAR | STRUCT ID
-bool typeBase(){
-	Token *start=iTk;
-	if(consume(TYPE_INT)) return true;
-	if(consume(TYPE_DOUBLE)) return true;
-	if(consume(TYPE_CHAR)) return true;
-	if(consume(STRUCT)){
-		if(consume(ID)) return true;
-		else tkerr("Struct ID is missing at line %d\n", iTk->line);
-		}
-	iTk=start;
+bool unit() {
+	for (;;) {
+		if (structDef()) {
+		} else if (fnDef()) {
+		} else if (varDef()) {
+		} else break;
+	}
+	if (consume(END)) {
+		return true;
+	}
 	return false;
-	}
+}
 
-bool arrayDecl() {
-	Token *start=iTk;
-	if(consume(LBRACKET)) {
-		consume(INT);
-		if (consume(RBRACKET)){ return true; }
-		else tkerr("The \']\' is missing at line %d\n");
+bool structDef() {
+	Token *start = iTk;
+	if (consume(STRUCT)) {
+		if (consume(ID)) {
+			if (consume(LACC)) {
+				for (;;) {
+					if (varDef()) {
+					} else break;
+				}
+				if (consume(RACC)) {
+					if (consume(SEMICOLON)) return true;
+					else tkerr("The semicolon \';\' after \'}\' is missing at line %d\n", iTk->line);
+				} else tkerr("The \'}\' is missing at line %d\n", iTk->line);
+			}
+		}
 	}
-	iTk=start;
+	iTk = start;
 	return false;
 }
 
 bool varDef() {
-	Token *start=iTk;
-	if(typeBase()) {
-		if(consume(ID)) {
+	Token *start = iTk;
+	if (typeBase()) {
+		if (consume(ID)) {
 			arrayDecl();
-			if(consume(SEMICOLON)) return true;
+			if (consume(SEMICOLON)) return true;
 			else tkerr("The semicolon \';\' is missing at line %d\n", iTk->line);
-		}else tkerr("ID is missing at line %d\n", iTk->line);
+		} //else tkerr("ID is missing at line %d\n", iTk->line);
 	}
-	iTk=start;
+	iTk = start;
 	return false;
 }
 
-bool structDef(){
-	Token * start = iTk;
-	if(consume(STRUCT)) {
-		if(consume(ID)) {
-			if(consume(LACC)) {
-				for (;;) {
-					if (varDef()){}
-					else break;
+bool typeBase() {
+	Token *start = iTk;
+	if (consume(TYPE_INT)) return true;
+	if (consume(TYPE_DOUBLE)) return true;
+	if (consume(TYPE_CHAR)) return true;
+	if (consume(STRUCT)) {
+		if (consume(ID)) return true;
+		// else tkerr("Struct ID is missing at line %d\n", iTk->line);
+	}
+	iTk = start;
+	return false;
+}
+
+bool arrayDecl() {
+	Token *start = iTk;
+	if (consume(LBRACKET)) {
+		consume(INT);
+		if (consume(RBRACKET)) { return true; } else tkerr("The \']\' is missing at line %d\n");
+	}
+	iTk = start;
+	return false;
+}
+
+bool fnDef() {
+	Token *start = iTk;
+	bool hasType = false;
+	if (typeBase()) {
+		hasType = true;
+	} else if (consume(VOID)) {
+		hasType = true;
+	}
+	if (hasType) {
+		if (consume(ID)) {
+			if (consume(LPAR)) {
+				if (fnParam()) {
+					while (consume(COMMA)) {
+						if (fnParam()) {
+						} else tkerr("Param is missing after\',\' at line %d", iTk->line);
+					}
 				}
-				if(consume(RBRACKET)) {
-					if(consume(SEMICOLON)) return true;
-					else tkerr("The semicolon \';\' after \'}\' is missing at line %d\n", iTk->line);
-				}else tkerr("The \'}\' is missing at line %d\n", iTk->line);
+				if (consume(RPAR)) {
+					if (stmCompound()) {
+						return true;
+					} else tkerr("Fct is missing the body at line %d\n", iTk->line);
+				} else tkerr("Fct declaration si not closed missing \')\' at line %d\n", iTk->line);
 			}
 		}
 	}
-	iTk=start;
+	iTk = start;
 	return false;
 }
 
 bool fnParam() {
-	Token *start=iTk;
-	if(typeBase()){
+	Token *start = iTk;
+	if (typeBase()) {
 		if (consume(ID)) {
 			arrayDecl();
 			return true;
-		}else tkerr("ID is missing at line %d\n", iTk->line);
+		} else tkerr("ID is missing at line %d\n", iTk->line);
 	}
-	iTk=start;
+	iTk = start;
 	return false;
 }
 
-bool stmCompound();
-
-bool fnDef() {
-	Token *start=iTk;
-	bool hasType=false;
-	if(typeBase()) {
-		hasType=true;
-	}else if(consume(VOID)) {
-		hasType=true;
-	}
-
-	if(hasType) {
+bool stm() {
+	Token *start = iTk;
+	if (stmCompound()) return true;
+	if (consume(IF)) {
 		if (consume(LPAR)) {
-			if (fnParam()) {
-				while (consume(COMMA)) {
-					if (fnParam()){}
-					else tkerr("Param is missing after\',\' at line %d", iTk->line);
+			if (expr()) {
+				if (consume(RPAR)) {
+					if (stm()) {
+						if (consume(ELSE)) {
+							if (stm()) {
+							} else tkerr("ELSE instructions are missing at line %d\n", iTk->line);
+						}
+						return true;
+					} else tkerr("IF instructions are missing at line %d\n", iTk->line);
+				} else tkerr("\')\' is missing at line %d\n", iTk->line);
+			} else tkerr("IF expression is missing at line %d\n", iTk->line);
+		} else tkerr("\'(\' is missing at line %d\n", iTk->line);
+	}
+	if (consume(WHILE)) {
+		if (consume(LPAR)) {
+			if (expr()) {
+				if (consume(RPAR)) {
+					if (stm())return true;
+					else tkerr("WHILE instructions are missing at line %d\n", iTk->line);
+				} else tkerr("\')\' is missing at line %d\n", iTk->line);
+			} else tkerr("WHILE expression is missing at line %d\n", iTk->line);
+		} else tkerr("\'(\' is missing at line %d\n", iTk->line);
+	}
+	if (consume(RETURN)) {
+		expr();
+		if (consume(SEMICOLON)) return true;
+		else tkerr("\';\' is missing at line %d\n", iTk->line);
+	}
+	if (expr()) {
+		if (consume(SEMICOLON)) return true;
+		else tkerr("\';\' is missing at line %d\n", iTk->line);
+	}
+	iTk = start;
+	return false;
+}
+
+
+bool stmCompound() {
+	Token *start = iTk;
+	if (consume(LACC)) {
+		for (;;) {
+			if (varDef()) {
+			} else if (stm()) {
+			} else break;
+		}
+		if (consume(RACC)) return true;
+		else tkerr("\'}\' is missing at line %d\n", iTk->line);
+	}
+	iTk = start;
+	return false;
+}
+
+bool expr() {
+	Token *start = iTk;
+	if (exprAssign()) {
+		return true;
+	}
+	iTk = start;
+	return false;
+}
+
+bool exprPrimary() {
+	Token *start = iTk;
+	if (consume(ID)) {
+		if (consume(LPAR)) {
+			if (expr()) {
+				for (; consume(COMMA);) {
+					expr();
 				}
 			}
-			if (consume(RPAR)) {
-				if (stmCompound()) {
-					return true;
-				}else tkerr("Fct is missing the body at line %d", iTk->line);
-			}else tkerr("Fct declaration si not closed missing \')\' at line");
 		}
 	}
 }
 
-
-// unit: ( structDef | fnDef | varDef )* END
-bool unit(){
-	for(;;){
-		if(structDef()){}
-		else if(fnDef()){}
-		else if(varDef()){}
-		else break;
-		}
-	if(consume(END)){
-		return true;
-		}
-	return false;
-	}
-
-void parse(Token *tokens){
-	iTk=tokens;
-	if(!unit())tkerr("syntax error");
-	}
+void parse(Token *tokens) {
+	iTk = tokens;
+	if (!unit())tkerr("syntax error");
+}
