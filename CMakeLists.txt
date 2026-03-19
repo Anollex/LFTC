@@ -11,6 +11,6 @@ add_executable(LTFC
         lexer.h
         utils.c
         utils.h
-        #parser.h
-        #parser.c
+        parser.h
+        parser.c
 )
