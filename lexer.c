@@ -385,7 +385,7 @@ void showTokens(const Token *tokens) {
 				printf(":%d", tk->i);
 				break;
 			case DOUBLE:
-				printf(":%g", tk->d);
+				printf(":%f", tk->d);
 				break;
 			case CHAR:
 				printf(":%c", tk->c);

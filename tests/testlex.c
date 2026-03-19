@@ -1,7 +1,6 @@
 // program de testare a analizorului lexical, v1.1
 
-int main()
-{
+int main() {
 	int i;
 	i=0;
 	while(i<10){
@@ -10,6 +9,6 @@ int main()
 		}
 	if(4.9==49e-1&&0.49E1==2.45*2.0)puts("yes");
 	putc('#');
-	puts("abc\v\b\babc\v\b\b\babc\n");	// pentru \n
+	puts("abc\v\a\babc\v\b\b\babc\n");	// pentru \n
 	return 0;
 }

@@ -270,11 +270,124 @@ bool stmCompound() {
 	return false;
 }
 
-bool expr() {
+bool expr() { return exprAssign(); }
+
+bool exprAssign() {
 	Token *start = iTk;
-	if (exprAssign()) {
-		return true;
+	if (exprUnary()) {
+		if (consume(ASSIGN)) {
+			if (exprAssign()) {
+				return true;
+			}
+		}
 	}
+	return exprOr();
+}
+
+bool exprOr() {
+	if (exprOr()) {
+		if (consume(OR)) {
+			if (exprAnd()) {
+				return true;
+			}
+		}
+	}
+	return exprAnd();
+}
+
+bool exprAnd() {
+	if (exprAnd()) {
+		if (consume(AND)) {
+			if (exprEq()) {
+				return true;
+			}
+		}
+	}
+	return exprEq();
+}
+
+bool exprEq() {
+	if (exprEq()) {
+		if (consume(EQUAL)||consume(NOTEQ)) {
+			if (exprRel()) {
+				return true;
+			}
+		}
+	}
+	return exprRel();
+}
+
+bool exprRel() {
+	if (exprRel()) {
+		if (consume(LESS)||consume(LESSEQ)||consume(GREATER)||consume(GREATEREQ)) {
+			if (exprAdd()) {
+				return true;
+			}
+		}
+	}
+	return exprAdd();
+}
+
+bool exprAdd() {
+	if (exprAdd()) {
+		if (consume(ADD)||consume(SUB)) {
+			if (exprMul()) {
+				return true;
+			}
+		}
+	}
+	return exprMul();
+}
+
+bool exprMul() {
+	if (exprMul()) {
+		if (consume(MUL)||consume(DIV)) {
+			if (exprCast()) {
+				return true;
+			}
+		}
+	}
+	return exprCast();
+}
+
+bool exprCast() {
+	if (consume(LPAR)) {
+		if (typeBase()) {
+			arrayDecl();
+			if (consume(RPAR)) {
+				if (exprCast()) {
+					return true;
+				}
+			}
+		}
+	}
+	return exprUnary();
+}
+
+bool exprUnary() {
+	Token *start = iTk;
+	char sign;
+
+	if ()
+
+}
+
+bool exprPostfix() {
+	Token *start = iTk;
+	if (exprPostfix()) {
+		if (consume(LBRACKET)) {
+			if (expr()) {
+				if (consume(RBRACKET)) {
+					return true;
+				} else tkerr("???");
+			}
+		}
+	} else if (consume(DOT)) {
+		if (consume(ID)) {
+			return true;
+		}
+	}
+	if (exprPrimary()) return true;
 	iTk = start;
 	return false;
 }
@@ -288,8 +401,25 @@ bool exprPrimary() {
 					expr();
 				}
 			}
+			if (consume(RPAR)) {
+				return true;
+			}
 		}
+		return true;
 	}
+	if (consume(INT)) return true;
+	if (consume(DOUBLE)) return true;
+	if (consume(CHAR)) return true;
+	if (consume(STRING)) return true;
+	if (consume(LPAR)) {
+		if (expr()) {
+			if (consume(RPAR)) {
+				return true;
+			} else tkerr("\')\' is missing at line %d\n", iTk->line);
+		} else tkerr("expression is missing at line %d\n", iTk->line);
+	}
+	iTk = start;
+	return false;
 }
 
 void parse(Token *tokens) {
