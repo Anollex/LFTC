@@ -271,8 +271,9 @@ Token *tokenize(const char *pch) {
 				if (isdigit(*pch)) {
 					for (start = pch; isdigit(*pch); pch++) {
 					}
-					if (*pch == '.' && isdigit(pch[1])) {
+					if (*pch == '.') {
 						pch++;
+						if (!isdigit(*pch)) err("missing decimal digits");
 						for (; isdigit(*pch); pch++);
 					}
 					if (*pch == 'e' || *pch == 'E') {

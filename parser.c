@@ -148,8 +148,8 @@ bool structDef() {
 				}
 				if (consume(RACC)) {
 					if (consume(SEMICOLON)) return true;
-					else tkerr("The semicolon \';\' after \'}\' is missing at line %d\n", iTk->line);
-				} else tkerr("The \'}\' is missing at line %d\n", iTk->line);
+					else tkerr("The semicolon \';\' after \'}\' is missing");
+				} else tkerr("The \'}\' is missing");
 			}
 		}
 	}
@@ -163,8 +163,8 @@ bool varDef() {
 		if (consume(ID)) {
 			arrayDecl();
 			if (consume(SEMICOLON)) return true;
-			else tkerr("The semicolon \';\' is missing at line %d\n", iTk->line);
-		} //else tkerr("ID is missing at line %d\n", iTk->line);
+			else tkerr("The semicolon \';\' is missing");
+		}
 	}
 	iTk = start;
 	return false;
@@ -177,7 +177,6 @@ bool typeBase() {
 	if (consume(TYPE_CHAR)) return true;
 	if (consume(STRUCT)) {
 		if (consume(ID)) return true;
-		// else tkerr("Struct ID is missing at line %d\n", iTk->line);
 	}
 	iTk = start;
 	return false;
@@ -187,7 +186,7 @@ bool arrayDecl() {
 	Token *start = iTk;
 	if (consume(LBRACKET)) {
 		consume(INT);
-		if (consume(RBRACKET)) { return true; } else tkerr("The \']\' is missing at line %d\n");
+		if (consume(RBRACKET)) { return true; } else tkerr("The \']\' is missing");
 	}
 	iTk = start;
 	return false;
@@ -207,14 +206,14 @@ bool fnDef() {
 				if (fnParam()) {
 					while (consume(COMMA)) {
 						if (fnParam()) {
-						} else tkerr("Param is missing after\',\' at line %d", iTk->line);
+						} else tkerr("Param after\',\'  is missing");
 					}
 				}
 				if (consume(RPAR)) {
 					if (stmCompound()) {
 						return true;
-					} else tkerr("Fct is missing the body at line %d\n", iTk->line);
-				} else tkerr("Fct declaration si not closed missing \')\' at line %d\n", iTk->line);
+					} else tkerr("Body of the function is missing");
+				} else tkerr("Fct declaration si not closed \')\' is missing");
 			}
 		}
 	}
@@ -228,7 +227,7 @@ bool fnParam() {
 		if (consume(ID)) {
 			arrayDecl();
 			return true;
-		} else tkerr("ID is missing at line %d\n", iTk->line);
+		} else tkerr("ID is missing");
 	}
 	iTk = start;
 	return false;
@@ -248,7 +247,7 @@ bool stm() {
 						}
 						return true;
 					} else tkerr("IF instructions are missing");
-				} else tkerr("\')\' is missing");
+				} else tkerr("IF expression is not closed \')\' is missing");
 			} else tkerr("IF expression is missing");
 		} else tkerr("\'(\' is missing");
 	}
@@ -257,19 +256,19 @@ bool stm() {
 			if (expr()) {
 				if (consume(RPAR)) {
 					if (stm())return true;
-					else tkerr("WHILE instructions are missing at line %d\n", iTk->line);
-				} else tkerr("\')\' is missing at line %d\n", iTk->line);
-			} else tkerr("WHILE expression is missing at line %d\n", iTk->line);
-		} else tkerr("\'(\' is missing at line %d\n", iTk->line);
+					else tkerr("WHILE instructions are missing");
+				} else tkerr("WHILE expression is not closed \')\' is missing");
+			} else tkerr("WHILE expression is missing");
+		} else tkerr("\'(\' is missing");
 	}
 	if (consume(RETURN)) {
 		expr();
 		if (consume(SEMICOLON)) return true;
-		else tkerr("\';\' is missing at line %d\n", iTk->line);
+		else tkerr("\';\' is missing");
 	}
 	if (expr()) {
 		if (consume(SEMICOLON)) return true;
-		else tkerr("\';\' is missing at line %d\n", iTk->line);
+		else tkerr("\';\' is missing");
 	} else if (consume(SEMICOLON)) return true;
 	iTk = start;
 	return false;
@@ -284,7 +283,7 @@ bool stmCompound() {
 			} else break;
 		}
 		if (consume(RACC)) return true;
-		else tkerr("\'}\' is missing at line %d\n", iTk->line);
+		else tkerr("\'}\' is missing");
 	}
 	iTk = start;
 	return false;
@@ -393,8 +392,8 @@ bool exprCast() {
 			if (consume(RPAR)) {
 				if (exprCast()) {
 					return true;
-				}
-			}
+				} else tkerr("expression is missing after cast");
+			} else tkerr("cast expression is not closed \')\' is missing");
 		}
 		iTk = start;
 	}
@@ -417,11 +416,12 @@ bool exprPostfixPrim() {
 	if (consume(LBRACKET)) {
 		if (expr()) {
 			if (consume(RBRACKET)) return exprPostfixPrim();
-			else tkerr("???");
-		}
+			else tkerr("expression is not closed \']\' is missing");
+		}else tkerr("expression is missing in []");
 	}
 	if (consume(DOT)) {
 		if (consume(ID)) return exprPostfixPrim();
+		else tkerr("after \'.\' the identifier is missing");
 	}
 	return true;
 }
@@ -442,7 +442,7 @@ bool exprPrimary() {
 			}
 			if (consume(RPAR)) {
 				return true;
-			}
+			} else tkerr("function call is not closed \')\' is missing");
 		}
 		return true;
 	}
@@ -454,8 +454,8 @@ bool exprPrimary() {
 		if (expr()) {
 			if (consume(RPAR)) {
 				return true;
-			} else tkerr("\')\' is missing at line %d\n", iTk->line);
-		} else tkerr("expression is missing at line %d\n", iTk->line);
+			} else tkerr("expression is not closed \')\' is missing");
+		} else tkerr("expression is missing");
 	}
 	iTk = start;
 	return false;
