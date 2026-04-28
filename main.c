@@ -11,10 +11,11 @@ int main(int argc, char *argv[]) {
         printf("\a.Usage: %s <input_file>\n", argv[0]);
         return 1;
     }
+
     char *buf = loadFile(argv[1]);
     Token *tokens = tokenize(buf);
     showTokens(tokens);
-    //parse(tokens);
+    parse(tokens);
     free(buf);
     return 0;
 }
