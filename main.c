@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     char *buf = loadFile(argv[1]);
     Token *tokens = tokenize(buf);
-    showTokens(tokens);
+    //showTokens(tokens);
     parse(tokens);
     free(buf);
     return 0;
