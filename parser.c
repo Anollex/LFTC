@@ -184,7 +184,7 @@ bool varDef() {
 			arrayDecl();
 			if (consume(SEMICOLON)) return true;
 			else tkerr("missing ; after variable declaration");
-		}
+		} else tkerr("missing identifier, missing { in struct definition");
 	}
 	iTk = start;
 	return false;
@@ -481,7 +481,7 @@ bool exprPrimary() {
 		if (consume(LPAR)) {
 			if (expr()) {
 				for (; consume(COMMA);) {
-					expr();
+					if (!expr()) tkerr("missing argument after , in function call");
 				}
 			}
 			if (consume(RPAR)) {
@@ -495,11 +495,13 @@ bool exprPrimary() {
 	if (consume(CHAR)) return true;
 	if (consume(STRING)) return true;
 	if (consume(LPAR)) {
-		if (expr()) {
+		if (expr())
+		{
 			if (consume(RPAR)) {
 				return true;
 			} else tkerr("missing ) after expression");
-		} else tkerr("invalid or missing expression after (");
+		}
+		// } else tkerr("invalid or missing expression after (");
 	}
 	iTk = start;
 	return false;
@@ -507,5 +509,5 @@ bool exprPrimary() {
 
 void parse(Token *tokens) {
 	iTk = tokens;
-	if (!unit()) tkerr("syntax error");
+	if (!unit()) tkerr("unexpected token at global level");
 }
