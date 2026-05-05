@@ -13,4 +13,10 @@ add_executable(LTFC
         utils.h
         parser.h
         parser.c
+        ad.h
+        ad.c
+        at.h
+        at.c
+        vm.h
+        vm.c
 )
