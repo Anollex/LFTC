@@ -169,7 +169,7 @@ bool structDef() {
 				if (consume(RACC)) {
 					if (consume(SEMICOLON)) return true;
 					else tkerr("missing ; after struct definition");
-				} else tkerr("missing } in struct definition");
+				} else tkerr("missing } in struct definition/invalid declaration");
 			}
 		}
 	}
@@ -184,7 +184,7 @@ bool varDef() {
 			arrayDecl();
 			if (consume(SEMICOLON)) return true;
 			else tkerr("missing ; after variable declaration");
-		} else tkerr("missing identifier, missing { in struct definition");
+		} else tkerr("missing identifier of a variable/function, missing { in struct definition");
 	}
 	iTk = start;
 	return false;
@@ -227,14 +227,14 @@ bool fnDef() {
 				if (fnParam()) {
 					while (consume(COMMA)) {
 						if (fnParam()) {
-						} else tkerr("missing parameter after ,");
+						} else tkerr("missing/invalid parameter after ,");
 					}
 				}
 				if (consume(RPAR)) {
 					if (stmCompound()) {
 						return true;
 					} else tkerr("missing function body");
-				} else tkerr("missing ) in function declaration");
+				} else tkerr("missing/invalid parameter/missing ) in function declaration");
 			}
 		}
 	}
