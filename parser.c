@@ -5,6 +5,8 @@
 
 #include "parser.h"
 
+#include "ad.h"
+
 Token *iTk; // the iterator in the tokens list
 Token *consumedTk; // the last consumed token
 
@@ -22,10 +24,10 @@ bool structDef();
 bool varDef();
 
 //typeBase: TYPE_INT | TYPE_DOUBLE | TYPE_CHAR | STRUCT ID
-bool typeBase();
+bool typeBase(Type *t);
 
 //arrayDecl: LBRACKET INT? RBRACKET
-bool arrayDecl();
+bool arrayDecl(Type *t);
 
 //fnDef: ( typeBase | VOID ) ID
 //				LPAR ( fnParam ( COMMA fnParam )* )? RPAR
@@ -43,7 +45,7 @@ bool fnParam();
 bool stm();
 
 // stmCompound: LACC ( varDef | stm )* RACC
-bool stmCompound();
+bool stmCompound(bool newDomain);
 
 // expr: exprAssign
 bool expr();
@@ -179,9 +181,10 @@ bool structDef() {
 
 bool varDef() {
 	Token *start = iTk;
-	if (typeBase()) {
+	Type t;
+	if (typeBase(&t)) {
 		if (consume(ID)) {
-			arrayDecl();
+			arrayDecl(&t);
 			if (consume(SEMICOLON)) return true;
 			else tkerr("missing ; after variable declaration");
 		} else tkerr("missing identifier, missing { in struct definition");
@@ -190,22 +193,37 @@ bool varDef() {
 	return false;
 }
 
-bool typeBase() {
+bool typeBase(Type *t)
+{
+	t->n=-1;
 	Token *start = iTk;
-	if (consume(TYPE_INT)) return true;
-	if (consume(TYPE_DOUBLE)) return true;
-	if (consume(TYPE_CHAR)) return true;
-	if (consume(STRUCT)) {
-		if (consume(ID)) return true;
+	if (consume(TYPE_INT)) {t->tb = TB_INT; return true;}
+	if (consume(TYPE_DOUBLE)) {t->tb = TB_DOUBLE; return true;}
+	if (consume(TYPE_CHAR)) {t->tb = TB_CHAR; return true;}
+	if (consume(STRUCT))
+	{
+		if (consume(ID))
+		{
+			Token *tkName = consumedTk;
+			t->tb = TB_STRUCT;
+			// t->s = findSymbol(tkName->text);
+			// if (!t->s) tkerr("undefined struct: %s", tkName->text);
+			return true;
+		}
 	}
 	iTk = start;
 	return false;
 }
 
-bool arrayDecl() {
+bool arrayDecl(Type *t) {
 	Token *start = iTk;
 	if (consume(LBRACKET)) {
-		consume(INT);
+		if (consume(INT)) {
+			Token *tkSize = consumedTk;
+			t->n = tkSize->i;
+		} else {
+			t->n = 0;
+		}
 		if (consume(RBRACKET)) return true;
 		else tkerr("missing ] in array declaration");
 	}
@@ -215,8 +233,9 @@ bool arrayDecl() {
 
 bool fnDef() {
 	Token *start = iTk;
+	Type t;
 	bool hasType = false;
-	if (typeBase()) {
+	if (typeBase(&t)) {
 		hasType = true;
 	} else if (consume(VOID)) {
 		hasType = true;
@@ -231,7 +250,7 @@ bool fnDef() {
 					}
 				}
 				if (consume(RPAR)) {
-					if (stmCompound()) {
+					if (stmCompound(false)) {
 						return true;
 					} else tkerr("missing function body");
 				} else tkerr("missing ) in function declaration");
@@ -244,9 +263,10 @@ bool fnDef() {
 
 bool fnParam() {
 	Token *start = iTk;
-	if (typeBase()) {
+	Type t;
+	if (typeBase(&t)) {
 		if (consume(ID)) {
-			arrayDecl();
+			arrayDecl(&t);
 			return true;
 		} else tkerr("missing parameter name");
 	}
@@ -256,7 +276,7 @@ bool fnParam() {
 
 bool stm() {
 	Token *start = iTk;
-	if (stmCompound()) return true;
+	if (stmCompound(true)) return true;
 	if (consume(IF)) {
 		if (consume(LPAR)) {
 			if (expr()) {
@@ -295,7 +315,7 @@ bool stm() {
 	return false;
 }
 
-bool stmCompound() {
+bool stmCompound(bool newDomain) {
 	Token *start = iTk;
 	if (consume(LACC)) {
 		for (;;) {
@@ -303,7 +323,11 @@ bool stmCompound() {
 			} else if (stm()) {
 			} else break;
 		}
-		if (consume(RACC)) return true;
+		if (consume(RACC))
+		{
+			if (newDomain) dropDomain();
+			return true;
+		}
 		else tkerr("missing }");
 	}
 	iTk = start;
@@ -427,8 +451,9 @@ bool exprMul() {
 bool exprCast() {
 	Token *start = iTk;
 	if (consume(LPAR)) {
-		if (typeBase()) {
-			arrayDecl();
+		Type t;
+		if (typeBase(&t)) {
+			arrayDecl(&t);
 			if (consume(RPAR)) {
 				if (exprCast()) return true;
 				else tkerr("missing expression after cast");
@@ -501,7 +526,6 @@ bool exprPrimary() {
 				return true;
 			} else tkerr("missing ) after expression");
 		}
-		// } else tkerr("invalid or missing expression after (");
 	}
 	iTk = start;
 	return false;
