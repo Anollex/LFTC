@@ -6,9 +6,11 @@
 #include "parser.h"
 
 #include "ad.h"
+#include "utils.h"
 
 Token *iTk; // the iterator in the tokens list
 Token *consumedTk; // the last consumed token
+Symbol *owner = NULL;
 
 void tkerr(const char *fmt, ...);
 
@@ -184,8 +186,35 @@ bool varDef() {
 	Type t;
 	if (typeBase(&t)) {
 		if (consume(ID)) {
+			Token *tkName = consumedTk;
 			arrayDecl(&t);
-			if (consume(SEMICOLON)) return true;
+			if (t.n == 0) tkerr("AD: a vector variable must have a specified dimension");
+			if (consume(SEMICOLON))
+			{
+				Symbol *var = findSymbolInDomain(symTable, tkName->text);
+				if (var) tkerr("SD: symbol redefinition: %s", tkName->text);
+				var = newSymbol(tkName->text, SK_VAR);
+				var->type = t;
+				var->owner = owner;
+				addSymbolToDomain(symTable, var);
+				if (owner)
+				{
+					switch (owner->kind) {
+					case SK_FN:
+						var->varIdx = symbolsLen(owner->fn.locals);
+						addSymbolToList(&owner->fn.locals, dupSymbol(var));
+						break;
+					case SK_STRUCT:
+						var->varIdx = typeSize(&owner->type);
+						addSymbolToList(&owner->structMembers, dupSymbol(var));
+						break;
+					}
+				} else
+				{
+					var->varMem = safeAlloc(typeSize(&t));
+				}
+				return true;
+			}
 			else tkerr("missing ; after variable declaration");
 		} else tkerr("missing identifier of a variable/function, missing { in struct definition");
 	}
@@ -318,6 +347,7 @@ bool stm() {
 bool stmCompound(bool newDomain) {
 	Token *start = iTk;
 	if (consume(LACC)) {
+		if (newDomain) pushDomain();
 		for (;;) {
 			if (varDef()) {
 			} else if (stm()) {
