@@ -25,6 +25,10 @@ double sum(double x[5],int n){
 	return r;
 	}
 
+int puti(int i) {
+	return i;
+}
+
 void f(struct S1 p){
 	puti(p.i);
 	}
