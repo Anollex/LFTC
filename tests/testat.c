@@ -2,12 +2,13 @@ struct S{
 	int n;
 	char text[16];
 	};
-	
+
 struct S a;
 struct S v[10];
 
 void f(char text[],int i,char ch){
 	text[i]=ch;
+	int x;
 	}
 
 int h(int x,int y){
