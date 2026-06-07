@@ -19,9 +19,9 @@ int main(int argc, char *argv[]) {
     pushDomain();   // creează domeniul global
     vmInit();
     parse(tokens);
-    //showDomain(symTable, "global");  // afișează simbolurile
-    Instr *testCode = genTestProgram();
-    run(testCode);
+    showDomain(symTable, "global");  // afișează simbolurile
+    //Instr *testCode = genTestProgram();
+    //run(testCode);
     dropDomain();
     free(buf);
     return 0;

@@ -147,7 +147,7 @@ int err11(){ return v[0].n; }
 // Expected: AT: cannot convert a struct
 
 // --- ERR26: AT: array can only be converted to another array ---
-void err26(){ a = (struct S)v[0]; }
+void err26(){ (double[]) arr; }
 // Expected: AT: an array can be converted only to another array
 
 // --- ERR27: AT: scalar can only be converted to another scalar ---

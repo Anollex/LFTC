@@ -92,6 +92,7 @@ void vmInit(){
 void run(Instr *IP){
 	Val v;
 	int iArg,iTop,iBefore;
+	double fTop, fBefore;
 	void(*extFnPtr)();
 	for(;;){
 		// shows the index of the current instruction and the number of values from stack
@@ -171,24 +172,24 @@ void run(Instr *IP){
 				IP=IP->next;
 				break;
 			case OP_ADD_F:{
-				double fTop=SP--->f;
-				double fBefore=SP--->f;
+				fTop=SP--->f;
+				fBefore=SP--->f;
 				(++SP)->f=fBefore+fTop;
 				printf("ADD.f\t// %g+%g -> %g",fBefore,fTop,fBefore+fTop);
 				IP=IP->next;
 				break;
 			}
 			case OP_SUB_F:{
-				double fTop=SP--->f;
-				double fBefore=SP--->f;
+				fTop=SP--->f;
+				fBefore=SP--->f;
 				(++SP)->f=fBefore-fTop;
 				printf("SUB.f\t// %g-%g -> %g",fBefore,fTop,fBefore-fTop);
 				IP=IP->next;
 				break;
 			}
 			case OP_LESS_F: {
-				double fTop=SP--->f;
-				double fBefore=SP--->f;
+				fTop=SP--->f;
+				fBefore=SP--->f;
 				pushi(fBefore<fTop);
 				printf("LESS.f\t// %g<%g -> %d",fBefore,fTop,fBefore<fTop);
 				IP=IP->next;
@@ -280,3 +281,41 @@ Instr *genTestProgramDouble(){
 	jfAfter->arg.instr=addInstrWithInt(&code,OP_RET_VOID,1);
 	return code;
 }
+
+/*
+ *	Stack frame
+ *	n[-2]  ret[-1]  oldFP[0]  i[1]
+ *
+ *	PUSH.f  2.0          // pune argumentul 2.0 pe stivă
+ *	CALL    f            // apelează funcția f
+ *	HALT                 // oprește execuția
+ *
+ *	// void f(double n):
+ *	ENTER   1            // creează frame cu 1 variabilă locală (i)
+ *
+ *	// double i=0.0;
+ *	PUSH.f  0.0          // pune 0.0 pe stivă
+ *	FPSTORE 1            // FP[1] = 0.0  (i=0.0)
+ *
+ *	// while(i<n){
+ *	FPLOAD  1            // pune i pe stivă
+ *	FPLOAD  -2           // pune n pe stivă
+ *	LESS.f               // i < n ?
+ *	JF      after        // dacă fals, sari după while
+ *
+ *	// put_d(i);
+ *	FPLOAD  1            // pune i pe stivă (argument)
+ *	CALL_EXT put_d       // apelează put_d
+ *
+ *	// i=i+0.5;
+ *	FPLOAD  1            // pune i pe stivă
+ *	PUSH.f  0.5          // pune 0.5 pe stivă
+ *	ADD.f                // i + 0.5
+ *	FPSTORE 1            // FP[1] = rezultat  (i=i+0.5)
+ *
+ *	// } (salt înapoi la while)
+ *	JMP     while        // sari la verificarea condiției
+ *
+ *	// after:
+ *	RET_VOID 1           // returnează din funcție (1 parametru)
+ */
