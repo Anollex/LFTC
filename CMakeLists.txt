@@ -19,4 +19,6 @@ add_executable(LTFC
         at.c
         vm.h
         vm.c
+        gc.h
+        gc.c
 )
